@@ -12,4 +12,5 @@ Chrome Extension for Debrid Media Manager that will Section Movies Based on thei
 
 This extension would break the native buttons and search functionality. I decided to remove the native sections and add a new custom one, that functions roughly enough the same so it would not crash client side.
 
-![image](https://github.com/user-attachments/assets/e1cb390f-6f5a-4195-824d-5259c9ed78fa)
+![image](https://github.com/user-attachments/assets/ca40f232-8131-4cc5-a7a1-2fb2a8fc6d42)
+
