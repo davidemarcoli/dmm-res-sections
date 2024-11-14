@@ -7,6 +7,7 @@
   "content_scripts": [
     {
       "matches": ["https://debridmediamanager.com/movie/*"],
+      "css": ["style.css"],
       "js": ["content.js"]
     }
   ],
