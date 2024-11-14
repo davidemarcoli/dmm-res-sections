@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Movie Resolution Organizer",
+  "version": "1.0",
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "description": "Organizes movie download options by resolution.",
+  "content_scripts": [
+    {
+      "matches": ["https://debridmediamanager.com/movie/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icon128.png"
+    }
+  }
+}
