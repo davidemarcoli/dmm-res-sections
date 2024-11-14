@@ -1,0 +1,81 @@
+/* General Section styling to add padding  */
+.section-wrapper {
+    margin: 10px;
+    box-sizing: border-box;
+}
+
+/* Grid for consistent alignment and evenly spaced columns */
+.mx-1 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Min 300px, responsive grid */
+    grid-auto-rows: minmax(200px, auto); /* Ensure consistent row height */
+    gap: 1rem;  /* Add spacing between your cards */
+    width: 100%;
+}
+
+/* Box with flexbox for proper alignment */
+.box {
+    display: flex;
+    flex-direction: column;  /* Stack elements vertically */
+    justify-content: space-between;  /* Ensure even spacing between title and buttons */
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 50px;
+    background-color: #2c3e50;
+    color: white;
+    word-wrap: break-word;
+}
+
+/* Header specific */
+.header {
+    font-size: 1.25rem;
+    line-clamp: 2; /* Apply line clamp */
+    white-space: normal;
+    word-wrap: break-word;
+    text-align: center;
+}
+
+/* Truncate the long titles (predefined) */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Ensure that the buttons are at the bottom and take up their space */
+.container-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Container for actions */
+.container-section div.space-y-2 {
+    margin-top: auto;  /* Space between content and buttons */
+}
+
+/* Ensure buttons align properly */
+.button {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    background-color: #3498db;
+    color: white;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Responsive adjustments for mobile/tablets */
+@media (max-width: 600px) {
+    .mx-1 {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Smaller columns */
+    }
+}
+
+/* Consistent spacing for items with hover effects */
+.hover\:shadow-lg:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
