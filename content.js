@@ -1,12 +1,14 @@
 // Global variable to track the current URL
 let currentUrl = location.href;
 let activeObserver = null;  // Store the active MutationObserver
+let customElementsInjected = false; // To track if we've already injected custom elements
 
+// Function to initialize the MutationObserver
 function initObserver() {
     console.log("Initializing MutationObserver with delay...");
-
+    
     // Ensure we're on a /movie/* page
-    if (!currentUrl.includes('.com/movie')) {
+    if (!currentUrl.includes('://debridmediamanager.com/movie')) {
         console.log("Not a /movie/* page. Skipping observer initialization.");
         return;
     }
@@ -19,15 +21,21 @@ function initObserver() {
             activeObserver.disconnect();
         }
 
-        // MutationObserver to detect the presence of the '.mx-1' element
         activeObserver = new MutationObserver((mutations, observer) => {
-            console.log("MutationObserver triggered.");
-
             const parentContainer = document.querySelector('.mx-1');
             if (parentContainer) {
                 console.log(".mx-1 element found.");
                 observer.disconnect();  // Stop observing once we find the element
-                categorizeByResolutionAndVersion();  // Now run the restructuring code
+
+                // Step 1 - Inject new UI elements below the background top section
+                if (!customElementsInjected) {
+                    removeAndInjectCustomSearchUI(); // Add only if not yet added
+                    injectCustomSectionBelowBackground(); // Ensure we're injecting the custom section below the background top section
+                    customElementsInjected = true;
+                }
+
+                // Step 2 - Perform categorization based on resolution and version
+                categorizeByResolutionAndVersion();
             } else {
                 console.warn(".mx-1 container not yet found.");
             }
@@ -38,6 +46,188 @@ function initObserver() {
     }, 3000); // Adjust the timeout delay (3 seconds here) as per your needs
 }
 
+// Function to remove the custom elements before leaving the /movie/* page
+function removeCustomElements() {
+    console.log("Removing custom elements...");
+
+    // Remove the custom search/filter container
+    const customSearchFilter = document.querySelector('.custom-search-filter');
+    if (customSearchFilter) {
+        customSearchFilter.remove();
+        console.log("Removed custom search/filter elements.");
+    }
+
+    // Remove the custom section below the background top section
+    const customSection = document.querySelector('.custom-section');
+    if (customSection) {
+        customSection.remove();
+        console.log("Removed custom section.");
+    }
+
+    customElementsInjected = false; // Reset flag
+}
+
+// Function to handle page changes and manage custom UI
+function handlePageChange() {
+    console.log(`Tracking URL change: ${currentUrl}`);
+
+    if (currentUrl.includes('://debridmediamanager.com/movie')) {
+        // We're on the /movie page, initialize the observer and inject UI
+        initObserver();
+    } else {
+        // We're not on a /movie page, so remove any custom UI elements
+        removeCustomElements();
+    }
+}
+
+// Function to monitor and detect URL changes
+function detectUrlChange() {
+    const observer = new MutationObserver(() => {
+        const newUrl = location.href;
+        if (newUrl !== currentUrl) {
+            console.log(`Navigated to a new page: ${newUrl}`);
+            currentUrl = newUrl;
+            handlePageChange();  // Handle actions based on whether we're on a /movie page
+        }
+    });
+    observer.observe(document.querySelector('head'), { childList: true, subtree: true });
+}
+
+// Function to inject the custom section BELOW the background top section
+function injectCustomSectionBelowBackground() {
+    // Locate the "background top section" - based on provided class
+    const backgroundSection = document.querySelector('.grid.auto-cols-auto'); // Adjust to match your top background section's class
+    
+    if (!backgroundSection) {
+        console.warn("Background section not found.");
+        return;
+    }
+
+    // Create a new custom section below the background top section
+    const customSection = document.createElement('div');
+    customSection.classList.add('custom-section');  // Optionally style it
+    
+    customSection.innerHTML = `
+        <div style="padding: 5px; margin-top: 5px;">
+            <div class="mb-2 flex items-center gap-2 overflow-x-auto p-2">
+                <span class="bg-gray-800 cursor-pointer whitespace-nowrap rounded px-2 py-1 text-xs text-white" id="singleFilter">Single</span>
+                <span class="bg-blue-900 cursor-pointer whitespace-nowrap rounded px-2 py-1 text-xs text-white" id="multiFilter">With extras</span>
+            </div>
+
+            <div class="mb-1 flex items-center py-2 border-b-2 border-gray-600">
+                <input class="mr-3 w-full appearance-none border-none bg-transparent px-2 py-1 text-sm leading-tight text-gray-100 focus:outline-none" 
+                       id="customSearch" placeholder="filter results | supports regex">
+                <span class="cursor-pointer rounded bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" id="resetBtn">
+                    Reset
+                </span>
+            </div>
+        </div>
+    `;
+
+    // Insert the custom section right below the background section
+    backgroundSection.parentNode.insertBefore(customSection, backgroundSection.nextSibling);
+
+    console.log("Custom section injected below the background top section.");
+
+    // Bind event listeners to the new custom section elements
+    bindCustomUIEvents();
+}
+
+// Function to remove existing search/filter elements and inject custom ones
+function removeAndInjectCustomSearchUI() {
+    // Select and remove existing elements
+    const existingSearchBox = document.querySelector('.mr-3');
+    const existingFilterButtons = document.querySelector('.mb-2');
+    const existingResetButton = document.querySelector('.me-2');
+
+    if (existingSearchBox) {
+        console.log("Removing existing search box...");
+        existingSearchBox.remove();
+    }
+
+    if (existingFilterButtons) {
+        console.log("Removing existing filter buttons...");
+        existingFilterButtons.remove();
+    }
+
+    if (existingResetButton) {
+        console.log("Removing existing reset button...");
+        existingResetButton.remove();
+    }
+}
+
+// Function to bind event listeners to custom search and filter elements
+function bindCustomUIEvents() {
+    const searchInput = document.getElementById("customSearch");
+    const resetButton = document.getElementById("resetBtn");
+    const singleFilterButton = document.getElementById("singleFilter");
+    const multiFilterButton = document.getElementById("multiFilter");
+
+    if (searchInput) {
+        searchInput.addEventListener('input', applyRegexFilter);
+    }
+
+    if (resetButton) {
+        resetButton.addEventListener('click', resetFilters);
+    }
+
+    if (singleFilterButton) {
+        singleFilterButton.addEventListener('click', function() {
+            filterByType('Single');
+        });
+    }
+
+    if (multiFilterButton) {
+        multiFilterButton.addEventListener('click', function() {
+            filterByType('With extras');
+        });
+    }
+}
+
+// Function to apply the regex search over file titles
+function applyRegexFilter() {
+    const searchInputValue = document.getElementById('customSearch').value;
+    const fileContainers = document.querySelectorAll('.space-y-2');
+
+    try {
+        const regex = new RegExp(searchInputValue, 'i');  // case-insensitive regex
+        fileContainers.forEach(container => {
+            const titleElement = container.querySelector('h2');
+            if (titleElement && regex.test(titleElement.textContent)) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        });
+    } catch (e) {
+        console.error(`Invalid regex: ${e.message}`);
+    }
+}
+
+// Function to reset all filters and show all content
+function resetFilters() {
+    document.getElementById('customSearch').value = '';  // Reset search input
+    const fileContainers = document.querySelectorAll('.space-y-2');
+    fileContainers.forEach(container => {
+        container.style.display = 'block';  // Show all items
+    });
+}
+
+// Function to filter content by file type: either 'Single' or 'With extras'.
+function filterByType(type) {
+    const fileContainers = document.querySelectorAll('.space-y-2');
+    
+    fileContainers.forEach(container => {
+        const fileTypeSpan = container.querySelector('span.haptic-sm'); // Adjust this selector as needed.
+        if (fileTypeSpan && fileTypeSpan.textContent.includes(type)) {
+            container.style.display = 'block';  // Show containers matching the type
+        } else {
+            container.style.display = 'none';  // Hide others
+        }
+    });
+}
+
+// Categorization logic
 function categorizeByResolutionAndVersion() {
     console.log("Running categorizeByResolutionAndVersion...");
 
@@ -216,24 +406,8 @@ function categorizeByResolutionAndVersion() {
     console.log("Categorization by resolution and version with colors done.");
 }
 
-// Function to detect URL changes and check for /movie/* pattern
-function detectUrlChange() {
-    const observer = new MutationObserver(() => {
-        const newUrl = location.href;
-        if (newUrl !== currentUrl && newUrl.includes('.com/movie')) {
-            console.log(`Navigated to a new /movie page: ${newUrl}`);
-            currentUrl = newUrl;
-            initObserver();  // Reinitialize observer on URL change
-        }
-    });
-
-    observer.observe(document.querySelector('head'), { childList: true, subtree: true });
-}
-
-// Initialize MutationObserver and URL change detection on page load
+// Initialize MutationObserver and detect URL changes when the window is loaded
 window.addEventListener("load", () => {
-    if (currentUrl.includes('.com/movie')) {
-        initObserver();  // Run the observer for the first load if on a /movie page
-    }
-    detectUrlChange();  // Detect URL changes for subsequent navigations
+    handlePageChange();  // Run this function on page load to check the starting page state
+    detectUrlChange();   // Set up URL change detection for in-page navigations
 });
