@@ -165,21 +165,34 @@ function categorizeByResolutionAndVersion() {
         "dual audio": "#d35400"      // Dark Orange for Dual Audio
     };
 
-    function createSection(title, children, bgColor) {
-        const section = document.createElement('div');
-        section.innerHTML = `<h2 style="background:${bgColor};color:white;padding:10px;border-radius:5px;">${title}</h2>`;
-        const sectionBody = document.createElement('div');
-        sectionBody.style.display = 'grid';
-        sectionBody.style.gridTemplateColumns = "repeat(auto-fill, minmax(300px, 1fr))";
-        sectionBody.style.gap = '10px';
+	function createSection(title, children, bgColor) {
+		const section = document.createElement('div');
 
-        children.forEach(child => {
-            sectionBody.appendChild(child);
-        });
+		// Create a unique class name using the section title
+		const sanitizedTitle = title.replace(/\s+/g, '-').toLowerCase().replace(/[^\w-]/g, ''); // Sanitize title for use in class
+		section.classList.add('section-wrapper', `section-${sanitizedTitle}`); // Add a unique section class
+		
+		// Create the header dynamically and assign the .header and .box classes
+		const header = document.createElement('h2');
+		header.classList.add('header', 'box');
+		header.style.background = bgColor; // Set dynamic background color
+		header.textContent = title;
 
-        section.appendChild(sectionBody);
-        return section;
-    }
+		// Create the body for the section
+		const sectionBody = document.createElement('div');
+		sectionBody.className = 'container-section'; // Leverage grid layout from CSS
+
+		// Append each child into the section body
+		children.forEach((child) => {
+			sectionBody.appendChild(child);
+		});
+
+		// Append the header and section body to the section container
+		section.appendChild(header);
+		section.appendChild(sectionBody);
+
+		return section;
+	}
 
     parentContainer.innerHTML = '';
 
