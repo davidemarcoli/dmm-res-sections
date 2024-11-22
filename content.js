@@ -2,6 +2,7 @@
 let currentUrl = location.href;
 let activeObserver = null;  // Store the active MutationObserver
 let customElementsInjected = false; // To track if we've already injected custom elements
+let urlChangeObserver = null; // Store URL change observer
 
 // Function to initialize the MutationObserver
 function initObserver() {
@@ -46,6 +47,18 @@ function initObserver() {
     }, 3000); // Adjust the timeout delay (3 seconds here) as per your needs
 }
 
+// Function to clean up observers
+function cleanupObservers() {
+    if (activeObserver) {
+        activeObserver.disconnect();
+        activeObserver = null;
+    }
+    if (urlChangeObserver) {
+        urlChangeObserver.disconnect();
+        urlChangeObserver = null;
+    }
+}
+
 // Function to remove the custom elements before leaving the /movie/* page
 function removeCustomElements() {
     console.log("Removing custom elements...");
@@ -68,8 +81,11 @@ function removeCustomElements() {
 }
 
 // Function to handle page changes and manage custom UI
-function handlePageChange() {
-    console.log(`Tracking URL change: ${currentUrl}`);
+function handlePageChange(newUrl) {
+    console.log(`Tracking URL change from ${currentUrl} to ${newUrl}`);
+    
+    // Update current URL
+    currentUrl = newUrl;
 
     if (currentUrl.includes('://debridmediamanager.com/movie')) {
         // We're on the /movie page, initialize the observer and inject UI
@@ -80,17 +96,50 @@ function handlePageChange() {
     }
 }
 
-// Function to monitor and detect URL changes
+// Enhanced URL change detection for both Firefox and Chrome
 function detectUrlChange() {
-    const observer = new MutationObserver(() => {
+    // Clean up existing observers
+    cleanupObservers();
+
+    // Create new URL change observer
+    urlChangeObserver = new MutationObserver(() => {
         const newUrl = location.href;
         if (newUrl !== currentUrl) {
-            console.log(`Navigated to a new page: ${newUrl}`);
-            currentUrl = newUrl;
-            handlePageChange();  // Handle actions based on whether we're on a /movie page
+            handlePageChange(newUrl);
         }
     });
-    observer.observe(document.querySelector('head'), { childList: true, subtree: true });
+
+    // Observe both title and body for changes
+    urlChangeObserver.observe(document.querySelector('head'), { 
+        childList: true, 
+        subtree: true 
+    });
+    urlChangeObserver.observe(document.querySelector('body'), { 
+        childList: true, 
+        subtree: true 
+    });
+
+    // Add popstate event listener for browser navigation
+    window.addEventListener('popstate', () => {
+        const newUrl = location.href;
+        if (newUrl !== currentUrl) {
+            handlePageChange(newUrl);
+        }
+    });
+
+    // Add pushState and replaceState event listeners
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
+        handlePageChange(location.href);
+    };
+
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
+        handlePageChange(location.href);
+    };
 }
 
 // Function to inject the custom section BELOW the background top section
@@ -406,8 +455,16 @@ function categorizeByResolutionAndVersion() {
     console.log("Categorization by resolution and version with colors done.");
 }
 
-// Initialize MutationObserver and detect URL changes when the window is loaded
-window.addEventListener("load", () => {
-    handlePageChange();  // Run this function on page load to check the starting page state
-    detectUrlChange();   // Set up URL change detection for in-page navigations
-});
+// Initialize when the DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        handlePageChange(location.href);
+        detectUrlChange();
+    });
+} else {
+    handlePageChange(location.href);
+    detectUrlChange();
+}
+
+// Cleanup when the window is unloaded
+window.addEventListener('unload', cleanupObservers);
